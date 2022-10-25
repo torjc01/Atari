@@ -1,6 +1,6 @@
 # Atari 
 
-Repositorio para aprendizado e desenvolvimento de jogos para Atari 2600 utilisando assembly 6502.
+Repositorio para aprendizado e desenvolvimento de jogos para Atari 2600 utilizando assembly 6502.
 
 
 ## Referências
