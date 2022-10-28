@@ -3,3 +3,6 @@ all:
 
 run:
 	stella cart.bin
+
+clean: 
+	rm *.bin *.lst *.sym 
