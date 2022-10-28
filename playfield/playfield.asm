@@ -1,136 +1,128 @@
-    processor 6502 
+    processor 6502
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Include required header files with defs and macros.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Include required files with definitions and macros
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     include "../include/vcs.h"
     include "../include/macro.h"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Start ROM code 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    seg code
-    org $F000
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Start our ROM code
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    seg
+    org $f000
 
 Reset:
     CLEAN_START
 
-    ldx #$80                ; Color blue background 
+    ldx #$80       ; blue background color
     stx COLUBK
 
-    lda #$1C                ; Color: yellow playfield
-    sta COLUPF 
+    lda #$1C       ; yellow playfield color
+    sta COLUPF
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Start a new frame by configuring VBLANK and VSYNC
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 StartFrame:
-    lda #02                     ; 
-    sta VBLANK                  ; turn VBLANK on  
-    sta VSYNC                   ; turn VSYNC on 
+    lda #02
+    sta VBLANK     ; turn VBLANK on
+    sta VSYNC      ; turn VSYNC on
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Generate the 3 lines of VSYNC 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Generate the three lines of VSYNC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     REPEAT 3
-        sta WSYNC           ; three scanlines for VSYNC
+        sta WSYNC  ; three VSYNC scanlines
     REPEND
+
     lda #0
-    sta VSYNC               ; turn VSYNC off 
+    sta VSYNC      ; turn VSYNC off
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Let the TIA output the 37 lines of VBLANK
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Let the TIA output the 37 recommended lines of VBLANK
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     REPEAT 37
-        sta WSYNC           
+        sta WSYNC
     REPEND
+
     lda #0
-    sta VBLANK              ; turn off VBLANK
+    sta VBLANK     ; turn VBLANK off
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Set the CTRLPF register to allow playfield reflection
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ldx #%00000001          ; CTRLPF register (D0 means reflect the PF)
-    stx CTRLPF              ; seta o bitmap para o CTRLPF fazer espelhamento
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Set the CTRLPF register to allow playfield reflect
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ldx #%00000001 ; CTRLPF register (D0 is the reflect flag)
+    stx CTRLPF
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Draw the 192 visible scanlines 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ; Skip 7 scanlines with no PF set 
-    ldx #%00000000          ; seta a linha vazia para os scanlines 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Draw the 192 visible scanlines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Skip 7 scanlines with no PF set
+    ldx #0
     stx PF0
-    stx PF1                 ; move zeros para todos os campos do PF
+    stx PF1
     stx PF2
-
-    REPEAT 7
-        sta WSYNC           ; 
-    REPEND 
-
-    ; Set the PF0 to 1110 (lsb first) and PF1 and PF2 1111-1111
-    ldx #%11100000          ; seta o pattern 1110 
-    stx PF0                 ; carrega em PF0
-    ldx #%11111111          ; seta o pattern 11111111 
-    stx PF1                 ; carrega em PF1
-    stx PF2                 ; carrega em PF2
-
     REPEAT 7
         sta WSYNC
     REPEND
 
-    ; Set the next 164 lines with only PF0 third bit enabled
+    ; Set the PF0 to 1110 (LSB first) and PF1-PF2 as 1111 1111
+    ldx #%11100000
+    stx PF0
+    ldx #%11111111
+    stx PF1
+    stx PF2
+    REPEAT 7
+       sta WSYNC   ; repeat PF config for 7 scanlines
+    REPEND
+
+    ; Set the next 164 lines only with PF0 third bit enabled
     ldx #%00100000
     stx PF0
-    ldx #%00000000
+    ldx #0
     stx PF1
-    stx PF2 
-
-    REPEAT 164
-        sta WSYNC
-    REPEND
-
-    ; Set the PF0 to 1110 (lsb first) and PF1 and PF2 1111-1111
-    ldx #%11100000          ; seta o pattern 1110 
-    stx PF0                 ; carrega em PF0
-    ldx #%11111111          ; seta o pattern 11111111 
-    stx PF1                 ; carrega em PF1
-    stx PF2                 ; carrega em PF2
-
-    REPEAT 7
-        sta WSYNC
-    REPEND
-
-; Skip 7 scanlines with no PF set 
-    ldx #%00000000          ; seta a linha vazia para os scanlines 
-    stx PF0
-    stx PF1                 ; move zeros para todos os campos do PF
     stx PF2
+    REPEAT 164
+       sta WSYNC
+    REPEND
 
+    ; Set the PF0 to 1110 (LSB first) and PF1-PF2 as 1111 1111
+    ldx #%11101111
+    stx PF0
+    ldx #%11111111
+    stx PF1
+    stx PF2
     REPEAT 7
-        sta WSYNC           ; 
-    REPEND 
+       sta WSYNC   ; repeat PF config for 7 scanlines
+    REPEND
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Output de outras 30 linhas para completar o frame com OVERSCAN 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    lda #02                 ; turn on VBLANK
-    sta VBLANK              
-
-    REPEAT 30
+    ; Skip 7 vertical lines with no PF set
+    ldx #0
+    stx PF0
+    stx PF1
+    stx PF2
+    REPEAT 7
         sta WSYNC
     REPEND
-    lda #0                  ; turn off VBLANK
-    sta VBLANK
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Loop para o proximo frame 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Output 30 more VBLANK overscan lines to complete our frame
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    lda #2
+    sta VBLANK     ; enable VBLANK back again
+    REPEAT 30
+       sta WSYNC   ; output the 30 recommended overscan lines
+    REPEND
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Loop to next frame
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jmp StartFrame
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Completa o tamanho da ROM até 4Kb 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    org $FFFC
-    .word StartFrame
-    .word StartFrame
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Complete ROM size
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    org $fffc
+    .word Reset
+    .word Reset
