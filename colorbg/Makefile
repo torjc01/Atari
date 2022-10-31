@@ -1,5 +1,8 @@
 all:
-	dasm *.asm -f3 -v0 -ocart.bin -lcart.lst -scart.sym
+	dasm *.asm -f3 -v0 -ocolorbg.bin -lcolorbg.lst -scolorbg.sym
 
 run:
-	stella cart.bin
+	stella colorbg.bin
+
+clean:
+	rm *.bin *.sym *.lst
